@@ -2,11 +2,13 @@
 
 ## Product
 
-Build a professional reverse job board for projects.
+Build Everbuild: a professional reverse job board for projects.
 
 **Tagline:** Projects are what matter, so let’s skip the resume.
 
 Students, freelancers, and professionals publish projects. Companies browse a project-first feed, filter it by their interests, save promising projects, and contact creators directly. The platform should feel like a professional version of Scratch’s project gallery: projects are the primary objects, profiles provide context, and discovery happens through browsing.
+
+Everbuild intentionally limits how many projects a person can publish during a rolling six-month period. This keeps the platform focused on meaningful work and makes it harder for bulk-generated or low-effort AI content to overwhelm discovery.
 
 ## Objective
 
@@ -33,6 +35,7 @@ A creator should be able to:
 ## Product principles
 
 - Projects are the primary feed objects; resumes are not part of the MVP.
+- The product name is Everbuild.
 - Public browsing should work without authentication.
 - Projects must be viewable on this platform. Do not require an external demo URL.
 - The initial experience is professional and restrained, not colorful or game-like.
@@ -41,6 +44,9 @@ A creator should be able to:
 - Anyone may create a creator account and publish projects.
 - Messaging is asynchronous and does not require approval.
 - Archived projects remain accessible to their owners but disappear from the default public feed.
+- A creator may first-publish at most three projects during any rolling six-month window. The limit applies across both active-feed and archive submissions.
+- Archiving, deleting, or moving a project does not restore a used publication slot. Republishing the same project after archiving does not consume another slot.
+- The publication limit must be a configurable constant so the product can use two instead of three without a schema rewrite.
 - Use local seed data and local media so the demo works without external services.
 
 ## Explicit non-goals
@@ -117,8 +123,10 @@ Every project has:
 - `project_type`: `web_app` or `video`
 - `project_status`: `idea`, `in_progress`, `complete`, `maintained`, or `seeking_collaborators`
 - `publication_status`: `draft`, `published`, or `archived`
+- `publication_destination`: `active_feed` or `archive`
 - `cover_asset_id` (nullable)
 - `published_at`
+- `first_published_at` (nullable; immutable after first publication)
 - `archived_at` (nullable)
 - `last_republished_at` (nullable)
 - `looking_for` (nullable)
@@ -126,6 +134,42 @@ Every project has:
 - `views_count`
 - `created_at`
 - `updated_at`
+
+### Publication limit
+
+Use a configurable maximum:
+
+```text
+MAX_PROJECT_SUBMISSIONS_PER_ROLLING_SIX_MONTHS = 3
+```
+
+The limit is per creator and applies to every project first published during the rolling six-month period, regardless of whether the project is sent to the active feed or directly to the archive.
+
+Rules:
+
+- A new project consumes one publication slot when it is first published.
+- A draft does not consume a slot until it is published.
+- Publishing to `active_feed` and publishing directly to `archive` both consume a slot.
+- Archiving, deleting, hiding, or changing the destination does not release a slot.
+- Republishing or renewing an existing project does not consume a second slot.
+- The owner should see used slots and remaining slots before publishing.
+- If the limit is reached, the project may remain a draft and the UI must explain when the oldest submission leaves the six-month window.
+- Use an immutable submission ledger so users cannot bypass the limit by deleting projects or changing status.
+
+Recommended supporting structure:
+
+```text
+project_publications(
+  id,
+  creator_id,
+  project_id,
+  first_published_at,
+  destination,
+  created_at
+)
+```
+
+There should be at most one first-publication ledger row per project. The rolling-window count should query ledger rows where `first_published_at > now - 6 months`.
 
 ### Project media
 
@@ -290,9 +334,11 @@ The feed should combine:
 
 - relevance to active filters/company interests;
 - freshness;
-- popularity, primarily views;
+- demonstrated impact, including views, comments, saves, and other meaningful engagement;
 - standard text-search relevance;
 - deterministic exploration so the same popular projects do not permanently dominate.
+
+Impact should be a first-class ranking signal. The feed should favor projects that demonstrably attract attention and discussion, while using freshness and deterministic exploration to keep the platform from becoming a permanent leaderboard.
 
 The ranking must be explainable and deterministic for a given user/company, filter set, and time bucket.
 
@@ -300,8 +346,8 @@ The ranking must be explainable and deterministic for a given user/company, filt
 
 1. Apply hard filters first.
 2. Calculate a relevance score from tag overlap and title/description text matching.
-3. Add a freshness component with a smooth age decay.
-4. Add a popularity component using `log1p(views_count)` so extremely popular projects do not overwhelm the feed.
+3. Calculate an impact component from unique views, comments, saves, and other meaningful engagement. Use logarithmic scaling and age decay so a project cannot dominate forever merely by accumulating historical views.
+4. Add a freshness component with a smooth age decay.
 5. Add deterministic exploration using a stable hash of `(viewer_id or company_id, project_id, week_bucket)`.
 6. Sort by the combined score.
 
@@ -309,13 +355,26 @@ Conceptual score:
 
 ```text
 score =
-    0.45 * relevance
-  + 0.20 * freshness
-  + 0.15 * popularity
-  + 0.20 * exploration
+    0.30 * relevance
+  + 0.40 * impact
+  + 0.15 * freshness
+  + 0.15 * exploration
 ```
 
 The exact weights may be tuned during implementation, but they must be centralized and documented.
+
+Recommended impact calculation:
+
+```text
+impact =
+    0.45 * decayed_log_unique_views
+  + 0.30 * decayed_log_comments
+  + 0.25 * decayed_log_saves
+```
+
+Use `log1p` and normalize the components within the current eligible result set. Count unique or debounced views rather than raw refreshes. Comments and saves should contribute more than passive impressions on a per-event basis.
+
+The impact score must not eliminate new projects entirely. A new project with little engagement should still receive exposure through freshness and the deterministic exploration component.
 
 The stable weekly hash means:
 
@@ -434,6 +493,7 @@ At minimum, support these entities:
 - `blocks`
 - `reports`
 - `project_views`
+- `project_publications`
 - `feed_preferences`
 
 Use the repository’s existing database conventions. Do not introduce a second database or ORM if one already exists.
@@ -456,6 +516,8 @@ Seed:
 - at least two message threads;
 - varied view counts and publication dates;
 - at least one archived project for demonstrating archive behavior.
+- seeded projects should demonstrate both high-impact and fresh/low-view projects so the ranking mix is visible;
+- seed data should include a creator near the publication limit and a draft blocked from publication after the limit is reached.
 
 All seed media should be local. Create small self-contained web-app examples and small local MP4 demo assets if necessary. Do not make the demo depend on external URLs.
 
@@ -529,7 +591,9 @@ The MVP is successful when all of the following work locally:
 - A company can save default feed filters.
 - The default company feed applies those filters automatically.
 - The recommended order is deterministic within a time bucket.
-- Freshness, popularity, and exploration visibly affect results.
+- Impact, freshness, relevance, and exploration visibly affect results.
+- Impact includes views, comments, and saves with logarithmic scaling.
+- A fresh low-view project can still appear through freshness or deterministic exploration.
 - Archived projects do not appear in the default feed.
 
 ### Projects
@@ -539,6 +603,10 @@ The MVP is successful when all of the following work locally:
 - A creator can upload a cover or use a generated/fallback cover.
 - A project can have tags, status, collaborators, optional “looking for,” and optional source code.
 - A project can be republished after archiving.
+- A creator cannot first-publish more than three projects within a rolling six-month period.
+- The publication limit applies to both active-feed and archive destinations.
+- Archiving or deleting a project does not bypass the publication limit.
+- The UI shows used slots, remaining slots, and the next available slot date when blocked.
 
 ### Profiles and interaction
 
@@ -569,7 +637,7 @@ If time runs short, preserve this order:
 5. Profiles.
 6. Messaging.
 7. Saves and comments.
-8. Reports, blocking, archive maintenance command, and cover automation.
+8. Reports, blocking, archive maintenance command, cover automation, and publication-limit polish.
 
 Never remove platform hosting or anonymous project browsing to save time. Those are central to the product concept.
 
