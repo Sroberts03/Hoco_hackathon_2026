@@ -11,9 +11,9 @@ export function LogoMark({ className = "h-6 w-6" }: { className?: string }) {
   );
 }
 
-export function Logo() {
+export function Logo({ href = "/" }: { href?: string }) {
   return (
-    <Link href="/" className="flex items-center gap-2 text-ink" aria-label="Everbuild home">
+    <Link href={href} className="flex items-center gap-2 text-ink" aria-label="Everbuild home">
       <span className="text-accent">
         <LogoMark />
       </span>

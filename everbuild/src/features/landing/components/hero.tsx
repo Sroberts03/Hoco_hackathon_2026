@@ -31,7 +31,12 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               </>
             )}
           </div>
-          <p className="mt-5 text-sm text-muted">Free for creators. No resumes, ever.</p>
+          <p className="mt-5 text-sm text-muted">
+            Free for creators. No resumes, ever.{" "}
+            <Link href="/discover" className="font-medium text-accent hover:underline">
+              Browse projects without an account →
+            </Link>
+          </p>
         </div>
         <ExampleGallery />
       </div>
