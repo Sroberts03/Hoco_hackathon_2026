@@ -44,6 +44,7 @@ export function hostedAppUrl(projectId: string): string {
 
 /** Storage layout: projects/<projectId>/app/... for web apps, projects/<projectId>/<file> otherwise. */
 export const storagePaths = {
+  root: (projectId: string) => `projects/${projectId}`,
   appDir: (projectId: string) => `projects/${projectId}/app`,
   file: (projectId: string, name: string) => `projects/${projectId}/${name}`,
   avatar: (userId: string) => `avatars/${userId}/profile.jpg`,

@@ -42,3 +42,12 @@ export type ProjectDetail = {
   };
   stats: { views: number; comments: number; saves: number };
 };
+
+/** A creator's rolling-window publication slots. */
+export type PublicationAllowance = {
+  used: number;
+  max: number;
+  remaining: number;
+  /** When the next slot frees up, if none are left. */
+  nextSlotAt: string | null;
+};
