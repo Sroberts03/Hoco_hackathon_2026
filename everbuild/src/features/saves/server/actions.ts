@@ -17,5 +17,6 @@ export async function setProjectSaved(projectId: string, saved: boolean): Promis
 
   if (error) return { saved: !saved, error: "Couldn't update. Try again." };
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/dashboard");
   return { saved };
 }
