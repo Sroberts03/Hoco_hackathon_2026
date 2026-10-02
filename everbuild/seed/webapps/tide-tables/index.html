@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tide Tables</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #0f2a3d; color: #e6eef3; }
+    h1 { font-size: 20px; margin: 0 0 4px; } p { margin: 0 0 12px; color: #9fb7c7; font-size: 14px; }
+    svg { width: 100%; max-width: 760px; background: #12344b; border-radius: 6px; display: block; }
+    .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; font-size: 14px; }
+    select { font: inherit; } #height { font-size: 28px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Tide Tables</h1>
+  <p>Predicted water level for the next 48 hours.</p>
+  <div class="row"><label>Station <select id="station">
+    <option value="1.4">Baltimore, Fort McHenry</option><option value="2.1">Annapolis</option><option value="2.9">Bay Bridge Tunnel</option>
+  </select></label></div>
+  <svg id="plot" viewBox="0 0 760 260" role="img" aria-label="Tide height over 48 hours"></svg>
+  <div class="row"><input id="hour" type="range" min="0" max="48" step="0.25" value="0" style="flex:1;max-width:760px"></div>
+  <div class="row"><span id="time"></span><span id="height"></span></div>
+  <script>
+    var svg = document.getElementById("plot"), station = document.getElementById("station"), hour = document.getElementById("hour");
+    function level(t, a) { return a * 0.5 * Math.cos((2 * Math.PI * t) / 12.42) + 0.15 * a * Math.cos((2 * Math.PI * t) / 24) + a * 0.5; }
+    function render() {
+      var a = Number(station.value), pts = [];
+      for (var t = 0; t <= 48; t += 0.25) pts.push((20 + (t / 48) * 720) + "," + (230 - (level(t, a) / 3.5) * 200));
+      var h = Number(hour.value), cx = 20 + (h / 48) * 720, cy = 230 - (level(h, a) / 3.5) * 200;
+      svg.innerHTML = '<path d="M' + pts.join(" L") + ' L740,230 L20,230 Z" fill="#2b7bb9" opacity="0.5"/>' +
+        '<path d="M' + pts.join(" L") + '" fill="none" stroke="#7cc4f2" stroke-width="2"/>' +
+        '<line x1="' + cx + '" x2="' + cx + '" y1="20" y2="230" stroke="#e6eef3" stroke-dasharray="3 3"/>' +
+        '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="#fff"/>';
+      document.getElementById("time").textContent = "+" + h.toFixed(2) + " h";
+      document.getElementById("height").textContent = level(h, a).toFixed(2) + " ft";
+    }
+    station.onchange = render; hour.oninput = render; render();
+  </script>
+</body>
+</html>

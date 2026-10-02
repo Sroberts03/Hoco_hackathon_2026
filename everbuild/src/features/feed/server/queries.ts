@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/supabase/admin";
+import { mediaUrl } from "@/features/media/lib/config";
 import type { Availability } from "@/features/profiles/lib/constants";
 import type { ProjectStatus, ProjectType } from "@/features/projects/lib/constants";
 import type { Industry } from "@/features/projects/lib/industries";
@@ -18,6 +19,7 @@ type Row = {
   published_at: string;
   last_republished_at: string | null;
   views_count: number;
+  cover_asset_id: string | null;
   owner: {
     id: string;
     display_name: string;
@@ -51,7 +53,7 @@ export async function loadFeedCandidates(): Promise<FeedProject[]> {
     .from("projects")
     .select(
       `id, title, description, project_type, project_status, industry, looking_for, general_location,
-       published_at, last_republished_at, views_count,
+       published_at, last_republished_at, views_count, cover_asset_id,
        owner:users!projects_owner_id_fkey(id, display_name, general_location, creator_profiles(availability)),
        project_tags(tags(name))`,
     )
@@ -85,6 +87,7 @@ export async function loadFeedCandidates(): Promise<FeedProject[]> {
       industry: r.industry,
       tags: r.project_tags.map((pt) => pt.tags?.name).filter((n): n is string => Boolean(n)),
       lookingFor: r.looking_for,
+      coverUrl: r.cover_asset_id ? mediaUrl(r.cover_asset_id) : null,
       location: r.general_location,
       owner: {
         id: r.owner?.id ?? "",

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synth Pad</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: #18181b; color: #f4f4f5; }
+    h1 { font-size: 20px; margin: 0 0 4px; } p { color: #a1a1aa; margin: 0 0 16px; font-size: 14px; }
+    .pads { display: grid; grid-template-columns: repeat(4, 96px); gap: 10px; }
+    button { height: 96px; border-radius: 10px; border: 1px solid #3f3f46; background: #27272a; color: #e4e4e7; font: 600 15px system-ui; cursor: pointer; }
+    button.on { background: #6366f1; border-color: #818cf8; } label { display: block; margin-top: 16px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Synth Pad</h1>
+  <p>Click a pad (or press A–K) to play a note.</p>
+  <div class="pads" id="pads"></div>
+  <label>Wave <select id="wave"><option>sine</option><option>triangle</option><option>sawtooth</option><option>square</option></select></label>
+  <script>
+    var notes = [["C", 261.63, "a"], ["D", 293.66, "s"], ["E", 329.63, "d"], ["F", 349.23, "f"], ["G", 392, "g"], ["A", 440, "h"], ["B", 493.88, "j"], ["C'", 523.25, "k"]], ctx;
+    function play(f, b) {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctx.createOscillator(), g = ctx.createGain(); o.type = document.getElementById("wave").value; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+      o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.85);
+      b.classList.add("on"); setTimeout(function () { b.classList.remove("on"); }, 180);
+    }
+    var pads = document.getElementById("pads");
+    notes.forEach(function (n) { var b = document.createElement("button"); b.textContent = n[0] + " (" + n[2].toUpperCase() + ")"; b.onclick = function () { play(n[1], b); }; pads.appendChild(b); n.push(b); });
+    window.onkeydown = function (e) { notes.forEach(function (n) { if (e.key === n[2]) play(n[1], n[3]); }); };
+  </script>
+</body>
+</html>

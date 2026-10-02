@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transit Delay Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #fff; color: #111827; }
+    h1 { font-size: 20px; margin: 0 0 4px; } .sub { color: #6b7280; margin: 0 0 16px; font-size: 14px; }
+    .kpis { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .kpi { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; min-width: 140px; } .kpi b { display: block; font-size: 22px; } .kpi span { font-size: 12px; color: #6b7280; }
+    table { border-collapse: collapse; font-size: 12px; } td { width: 26px; height: 22px; text-align: center; }
+    th { font-weight: 500; color: #6b7280; padding: 2px 6px; text-align: right; white-space: nowrap; } select { font: inherit; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Transit Delay Dashboard</h1>
+  <p class="sub">Average delay (minutes) by route and hour of day, last 30 days.</p>
+  <div class="kpis"><div class="kpi"><span>Median delay</span><b id="median"></b></div><div class="kpi"><span>Worst hour</span><b id="worst"></b></div><div class="kpi"><span>Trips analyzed</span><b>41,208</b></div></div>
+  <label>Day type <select id="day"><option value="0">Weekday</option><option value="1">Weekend</option></select></label>
+  <table id="heat"></table>
+  <script>
+    var routes = ["CityLink Blue", "CityLink Red", "LocalLink 26", "LocalLink 54", "Express 120"];
+    function delay(r, h, wk) { var p = Math.exp(-Math.pow(h - 8, 2) / 4) + Math.exp(-Math.pow(h - 17.5, 2) / 5); return Math.round((1 + (r + 1) * 0.6 * (wk ? 0.35 : 1) * p * 3 + Math.abs(Math.sin(r * 7 + h)) * 0.8) * 10) / 10; }
+    function render() {
+      var wk = document.getElementById("day").value === "1", all = [], worst = [0, 0];
+      var html = "<tr><th></th>" + Array.from({ length: 24 }, function (_, h) { return "<th style='text-align:center'>" + h + "</th>"; }).join("") + "</tr>";
+      routes.forEach(function (name, r) {
+        html += "<tr><th>" + name + "</th>";
+        for (var h = 0; h < 24; h++) { var d = delay(r, h, wk), a = Math.min(1, d / 10); all.push(d); if (d > worst[0]) worst = [d, h];
+          html += "<td title='" + d + " min' style='background:rgba(220,38,38," + a + ");color:" + (a > 0.55 ? "#fff" : "#111") + "'>" + Math.round(d) + "</td>"; }
+        html += "</tr>";
+      });
+      document.getElementById("heat").innerHTML = html; all.sort(function (a, b) { return a - b; });
+      document.getElementById("median").textContent = all[Math.floor(all.length / 2)] + " min"; document.getElementById("worst").textContent = worst[1] + ":00";
+    }
+    document.getElementById("day").onchange = render; render();
+  </script>
+</body>
+</html>

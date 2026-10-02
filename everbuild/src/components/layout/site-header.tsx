@@ -13,9 +13,10 @@ const PUBLIC_NAV: NavItem[] = [
   { href: "/#principles", label: "How it works" },
 ];
 
-/** App links for signed-in users. Add routes here as features ship (Messages, Settings…). */
+/** App links for signed-in users. Add routes here as features ship (Settings…). */
 const APP_NAV: NavItem[] = [
   { href: "/discover", label: "Discover" },
+  { href: "/messages", label: "Messages" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 

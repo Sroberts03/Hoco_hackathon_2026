@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Climate Classroom</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Climate Classroom</h1>
+    <p>Global surface temperature anomaly relative to the 1951–1980 average.</p>
+  </header>
+  <main>
+    <canvas id="chart" width="760" height="320" aria-label="Temperature anomaly chart"></canvas>
+    <div class="controls">
+      <label>From <input id="from" type="range" min="1880" max="2010" value="1880"></label>
+      <span id="range-label"></span>
+      <label><input id="smooth" type="checkbox" checked> 10-year average</label>
+    </div>
+    <section class="question">
+      <h2>Think about it</h2>
+      <p id="prompt"></p>
+    </section>
+  </main>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

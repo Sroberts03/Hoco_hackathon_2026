@@ -28,6 +28,8 @@ export type FeedProject = {
   industry: Industry | null;
   tags: string[];
   lookingFor: string | null;
+  /** Same-origin URL of the cover image, if one exists. */
+  coverUrl: string | null;
   location: string | null;
   owner: {
     id: string;

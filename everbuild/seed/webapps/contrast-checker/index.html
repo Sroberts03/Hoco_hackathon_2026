@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Color Contrast Checker</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; color: #111; background: #fafafa; }
+    h1 { font-size: 20px; margin: 0 0 4px; } p { color: #555; margin: 0 0 14px; font-size: 14px; }
+    textarea { width: 100%; max-width: 520px; font: 14px ui-monospace, monospace; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+    table { border-collapse: collapse; margin-top: 16px; font-size: 13px; } td, th { padding: 6px 10px; border-bottom: 1px solid #e5e5e5; text-align: left; }
+    .sw { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 600; } .pass { color: #0a7a3f; } .fail { color: #b42318; }
+  </style>
+</head>
+<body>
+  <h1>Color Contrast Checker</h1>
+  <p>Paste hex colors (one per line). Every pair is scored against WCAG 2.2.</p>
+  <textarea id="in" rows="5">#24524e
+#ffffff
+#e6eeec
+#5f5e5a
+#a63d32</textarea>
+  <table><thead><tr><th>Sample</th><th>Ratio</th><th>AA text</th><th>AA large</th><th>AAA</th></tr></thead><tbody id="out"></tbody></table>
+  <script>
+    function lum(hex) { var c = hex.replace("#", ""); if (c.length === 3) c = c.split("").map(function (x) { return x + x; }).join("");
+      return [0, 2, 4].map(function (i) { var v = parseInt(c.substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); })
+        .reduce(function (a, v, i) { return a + v * [0.2126, 0.7152, 0.0722][i]; }, 0); }
+    function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+    function mark(ok) { return "<td class='" + (ok ? "pass" : "fail") + "'>" + (ok ? "Pass" : "Fail") + "</td>"; }
+    function render() {
+      var cs = document.getElementById("in").value.split(/\s+/).filter(function (s) { return /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s); }).map(function (s) { return s[0] === "#" ? s : "#" + s; });
+      var rows = [];
+      for (var i = 0; i < cs.length; i++) for (var j = 0; j < cs.length; j++) if (i !== j) { var r = ratio(cs[i], cs[j]);
+        rows.push([r, "<tr><td><span class='sw' style='color:" + cs[i] + ";background:" + cs[j] + "'>Aa " + cs[i] + " on " + cs[j] + "</span></td><td>" + r.toFixed(2) + ":1</td>" + mark(r >= 4.5) + mark(r >= 3) + mark(r >= 7) + "</tr>"]); }
+      rows.sort(function (a, b) { return b[0] - a[0]; }); document.getElementById("out").innerHTML = rows.map(function (r) { return r[1]; }).join("");
+    }
+    document.getElementById("in").oninput = render; render();
+  </script>
+</body>
+</html>

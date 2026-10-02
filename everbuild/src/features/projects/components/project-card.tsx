@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { PROJECT_STATUSES, PROJECT_TYPES, type ProjectStatus, type ProjectType } from "../lib/constants";
 import { INDUSTRIES, type Industry } from "../lib/industries";
@@ -11,6 +12,7 @@ export type ProjectCardData = {
   industry: Industry | null;
   tags: string[];
   lookingFor: string | null;
+  coverUrl: string | null;
   location: string | null;
   owner: { name: string; location: string | null };
   views: number;
@@ -38,8 +40,12 @@ export function ProjectCard({
   return (
     <article className="group flex flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
       <Link href={`/projects/${project.id}`} className="flex flex-1 flex-col focus-visible:outline-2 focus-visible:outline-accent">
-        <div className="aspect-[16/10] border-b border-line">
-          <ProjectCover id={project.id} title={project.title} type={project.type} />
+        <div className="relative aspect-[16/10] overflow-hidden border-b border-line bg-surface-2">
+          {project.coverUrl ? (
+            <Image src={project.coverUrl} alt="" fill unoptimized sizes="(min-width: 1280px) 20rem, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+          ) : (
+            <ProjectCover id={project.id} title={project.title} type={project.type} />
+          )}
         </div>
         <div className="flex flex-1 flex-col p-4">
           <div className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted">
