@@ -86,6 +86,7 @@ export function ProjectPage({ project, comments, viewer, saved, canComment }: Pr
           title={p.title}
           type={p.type}
           hostedAppUrl={p.media.hostedAppUrl}
+          githubRepo={p.media.githubRepo}
           videoUrl={p.media.videoUrl}
           posterUrl={p.media.posterUrl}
         />

@@ -7,8 +7,9 @@
 // All demo accounts share DEMO_PASSWORD below, e.g. log in as
 // talent@northwind.demo.everbuild.test to see a company's default feed.
 //
-// Media: web apps are uploaded from seed/webapps/<app>/; videos are rendered
-// locally with ffmpeg-static from built-in test patterns (no external assets).
+// Media: web apps are uploaded from seed/webapps/<app>/ or run from a public
+// GitHub repo (`repo`, booted by StackBlitz in the viewer's browser); videos are
+// rendered locally with ffmpeg-static from built-in test patterns.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -122,6 +123,12 @@ const projects = [
   { owner: "jordan", title: "Color Contrast Checker", app: "contrast-checker", industry: "developer_tools", type: "web_app", pstatus: "complete", published: 55, views: 330,
     tags: ["Accessibility", "UI/UX", "JavaScript", "Graphic Design"],
     desc: "Paste a palette and see every foreground/background pair scored against WCAG contrast thresholds." },
+  { owner: "jordan", title: "React + TypeScript Starter", repo: "vitejs/vite/tree/main/packages/create-vite/template-react-ts", industry: "developer_tools", type: "web_app", pstatus: "maintained", published: 6, views: 75,
+    tags: ["React", "TypeScript", "Frontend"],
+    desc: "Runs live from GitHub: the repo is installed and started in your browser with StackBlitz, no upload needed." },
+  { owner: "luis", title: "Vue Starter", repo: "vitejs/vite/tree/main/packages/create-vite/template-vue", industry: "developer_tools", type: "web_app", pstatus: "complete", published: 9, views: 40,
+    tags: ["Vue", "JavaScript", "Frontend"],
+    desc: "A Vue 3 + Vite app booted straight from its GitHub repo." },
 ];
 
 const saves = [
@@ -304,7 +311,7 @@ async function main() {
       project_type: p.type, project_status: p.pstatus, industry: p.industry ?? null, publication_status: status,
       published_at: published, first_published_at: published,
       archived_at: status === "archived" ? daysAgo(p.archivedDaysAgo ?? 0) : null,
-      looking_for: p.lookingFor ?? null, views_count: p.views ?? 0,
+      github_repo: p.repo ?? null, looking_for: p.lookingFor ?? null, views_count: p.views ?? 0,
       created_at: published ?? daysAgo(4),
     }).select("id").single());
     projectId[p.title] = row.id;
@@ -313,7 +320,7 @@ async function main() {
     if (missing.length) throw new Error(`Unknown tags on ${p.title}: ${missing.join(", ")}`);
     must(`project_tags ${p.title}`, await db.from("project_tags").insert(p.tags.map((t) => ({ project_id: row.id, tag_id: tagId[t] }))));
     await addMedia(row.id, p, tmp);
-    console.log(`  ✓ ${p.title}${p.app ? " (web app)" : p.video ? " (video)" : ""}`);
+    console.log(`  ✓ ${p.title}${p.app ? " (web app)" : p.repo ? " (GitHub)" : p.video ? " (video)" : ""}`);
   }
 
   must("saved_projects", await db.from("saved_projects").insert(

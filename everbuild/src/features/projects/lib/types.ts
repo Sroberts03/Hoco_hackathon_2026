@@ -34,6 +34,8 @@ export type ProjectDetail = {
   media: {
     /** Present for web apps that have an uploaded bundle. */
     hostedAppUrl: string | null;
+    /** Canonical "owner/repo[/tree/ref/path]" for web apps run from GitHub via StackBlitz. */
+    githubRepo: string | null;
     videoUrl: string | null;
     posterUrl: string | null;
     coverUrl: string | null;

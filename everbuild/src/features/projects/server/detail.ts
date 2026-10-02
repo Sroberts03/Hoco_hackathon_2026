@@ -26,6 +26,7 @@ type Row = {
   last_republished_at: string | null;
   archived_at: string | null;
   cover_asset_id: string | null;
+  github_repo: string | null;
   views_count: number;
   owner: {
     id: string;
@@ -53,7 +54,7 @@ export const getProjectDetail = cache(async (id: string, viewerId: string | null
     .from("projects")
     .select(
       `id, owner_id, title, description, project_type, project_status, industry, publication_status, visibility,
-       looking_for, general_location, published_at, last_republished_at, archived_at, cover_asset_id, views_count,
+       looking_for, general_location, published_at, last_republished_at, archived_at, cover_asset_id, github_repo, views_count,
        owner:users!projects_owner_id_fkey(id, display_name, general_location, creator_profiles(bio, education, availability)),
        project_tags(tags(name, category)),
        project_media!project_media_project_id_fkey(id, media_type),
@@ -110,6 +111,7 @@ export const getProjectDetail = cache(async (id: string, viewerId: string | null
     collaborators,
     media: {
       hostedAppUrl: r.project_type === "web_app" && bundle ? hostedAppUrl(r.id) : null,
+      githubRepo: r.project_type === "web_app" ? r.github_repo : null,
       videoUrl: r.project_type === "video" && video ? mediaUrl(video.id) : null,
       posterUrl: poster ? mediaUrl(poster.id) : null,
       coverUrl: coverId ? mediaUrl(coverId) : null,
