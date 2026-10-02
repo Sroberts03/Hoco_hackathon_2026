@@ -4,7 +4,14 @@ import { isBlockedEitherWay } from "@/features/safety/server/blocks";
 import { MAX_MESSAGE_LENGTH, MESSAGE_COOLDOWN_SECONDS, MESSAGES_PER_HOUR_LIMIT } from "../lib/config";
 import type { Participant, ThreadDetail, ThreadSummary } from "../lib/types";
 
-type UserRow = { id: string; display_name: string; role: "creator" | "company"; company_profiles: { is_verified: boolean } | null };
+type UserRow = {
+  id: string;
+  display_name: string;
+  role: "creator" | "company";
+  avatar_path: string | null;
+  updated_at: string;
+  company_profiles: { is_verified: boolean } | null;
+};
 type ThreadRow = {
   id: string;
   participant_a_id: string;
@@ -16,8 +23,8 @@ type ThreadRow = {
 };
 
 const THREAD_SELECT = `id, participant_a_id, participant_b_id, updated_at,
-  a:users!message_threads_participant_a_id_fkey(id, display_name, role, company_profiles(is_verified)),
-  b:users!message_threads_participant_b_id_fkey(id, display_name, role, company_profiles(is_verified)),
+  a:users!message_threads_participant_a_id_fkey(id, display_name, role, avatar_path, updated_at, company_profiles(is_verified)),
+  b:users!message_threads_participant_b_id_fkey(id, display_name, role, avatar_path, updated_at, company_profiles(is_verified)),
   project:projects!message_threads_project_id_fkey(id, title)`;
 
 function toParticipant(u: UserRow | null): Participant {
@@ -26,6 +33,8 @@ function toParticipant(u: UserRow | null): Participant {
     name: u?.display_name ?? "Deleted user",
     role: u?.role ?? "creator",
     isVerifiedCompany: Boolean(u?.company_profiles?.is_verified),
+    // Same URL scheme as profile pages; the version busts the cache when the photo changes.
+    avatarUrl: u?.avatar_path?.startsWith(`avatars/${u.id}/`) ? `/avatars/${u.id}?v=${encodeURIComponent(u.updated_at)}` : null,
   };
 }
 

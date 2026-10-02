@@ -3,6 +3,8 @@ export type Participant = {
   name: string;
   role: "creator" | "company";
   isVerifiedCompany: boolean;
+  /** Profile photo, or null to show initials. */
+  avatarUrl: string | null;
 };
 
 export type ThreadSummary = {
@@ -30,3 +32,8 @@ export type ThreadDetail = {
 };
 
 export type MessageFormState = { error?: string; ok?: number };
+
+/** Creators and companies have separate public profile pages. */
+export function profileHref(p: Participant): string {
+  return p.role === "company" ? `/companies/${p.id}` : `/users/${p.id}`;
+}

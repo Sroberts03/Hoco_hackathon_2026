@@ -1,68 +1,58 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { ReportButton } from "@/features/safety/components/report-button";
-import { formatDate, formatRelative } from "@/lib/format";
-import { deleteMessage } from "../server/actions";
-import type { ThreadDetail } from "../lib/types";
+import { profileHref, type ThreadDetail } from "../lib/types";
+import { MessageList } from "./message-list";
 import { ParticipantName } from "./participant-name";
 import { ReplyForm } from "./reply-form";
 
 export function ThreadView({ thread }: { thread: ThreadDetail }) {
+  const { other } = thread;
+
   return (
-    <div className="flex flex-col rounded-xl border border-line bg-surface">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
-        <div>
-          <ParticipantName person={thread.other} />
-          {thread.project ? (
-            <p className="mt-0.5 text-sm text-muted">
-              About{" "}
-              <Link href={`/projects/${thread.project.id}`} className="font-medium text-accent hover:underline">
-                {thread.project.title}
-              </Link>
-            </p>
-          ) : null}
+    <>
+      <header className="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
+        <Link href="/messages" className="-ml-1 rounded-md p-1 text-muted hover:bg-surface-2 hover:text-ink lg:hidden" aria-label="All messages">
+          <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+            <path d="m12 5-5 5 5 5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
+        <Link href={profileHref(other)} className="shrink-0" tabIndex={-1} aria-hidden>
+          <Avatar name={other.name} src={other.avatarUrl} size="lg" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <Link href={profileHref(other)} className="hover:underline">
+            <ParticipantName person={other} />
+          </Link>
+          <p className="truncate text-sm text-muted">
+            {other.role === "company" ? "Company" : "Creator"}
+            {thread.project ? (
+              <>
+                {" · about "}
+                <Link href={`/projects/${thread.project.id}`} className="font-medium text-accent hover:underline">
+                  {thread.project.title}
+                </Link>
+              </>
+            ) : null}
+          </p>
         </div>
-        <ReportButton targetType="thread" targetId={thread.id} label="Report conversation" />
+        <div className="flex shrink-0 items-center gap-4">
+          <Link href={profileHref(other)} className="hidden text-sm text-muted hover:text-ink sm:inline">
+            View profile
+          </Link>
+          <ReportButton targetType="thread" targetId={thread.id} label="Report" />
+        </div>
       </header>
 
-      <ol className="space-y-4 px-5 py-5">
-        {thread.messages.map((m) => (
-          <li key={m.id} className={`flex ${m.fromMe ? "justify-end" : "justify-start"}`}>
-            <div className="max-w-[85%] sm:max-w-[70%]">
-              <div
-                className={`rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed ${
-                  m.body === null
-                    ? "border border-dashed border-line italic text-muted"
-                    : m.fromMe
-                      ? "bg-accent text-accent-ink"
-                      : "bg-surface-2 text-ink"
-                }`}
-              >
-                <p className="whitespace-pre-line">{m.body ?? "Message deleted"}</p>
-              </div>
-              <div className={`mt-1 flex gap-3 text-xs text-muted ${m.fromMe ? "justify-end" : ""}`}>
-                <time dateTime={m.createdAt} title={formatDate(m.createdAt)}>
-                  {m.fromMe ? "Sent" : "Received"} {formatRelative(m.createdAt)}
-                </time>
-                {m.fromMe && m.body !== null ? (
-                  <form action={deleteMessage.bind(null, m.id)}>
-                    <button type="submit" className="hover:text-danger">
-                      Delete
-                    </button>
-                  </form>
-                ) : null}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <MessageList key={thread.id} messages={thread.messages} other={other} />
 
-      <div className="border-t border-line px-5 py-4">
+      <div className="border-t border-line px-4 py-3 sm:px-5">
         {thread.blocked ? (
-          <p className="text-sm text-muted">You can&apos;t reply to this conversation.</p>
+          <p className="py-2 text-center text-sm text-muted">You can&apos;t reply to this conversation.</p>
         ) : (
-          <ReplyForm threadId={thread.id} />
+          <ReplyForm threadId={thread.id} recipientName={other.name} />
         )}
       </div>
-    </div>
+    </>
   );
 }
