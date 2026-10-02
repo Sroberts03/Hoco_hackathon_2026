@@ -5,6 +5,9 @@ import { buttonClass } from "@/components/ui";
 import { getSavedProjects } from "@/features/saves/server/queries";
 import { ProjectCard } from "@/features/projects/components/project-card";
 import { SaveButton } from "@/features/saves/components/save-button";
+import { CandidateBoard } from "@/features/candidates/components/candidate-board";
+import { getCompanyCandidates } from "@/features/candidates/server/queries";
+import type { Candidate } from "@/features/candidates/lib/types";
 import { NewProjectButton } from "@/features/projects/components/new-project/new-project-button";
 import { PROJECT_TYPES } from "@/features/projects/lib/constants";
 import { listOwnedProjects } from "@/features/projects/server/owned";
@@ -23,6 +26,16 @@ export default async function DashboardPage() {
     isCompany ? null : getPublicationAllowance(viewer.id),
     isCompany ? [] : listOwnedProjects(viewer.id),
   ]);
+  let candidates: Candidate[] = [];
+  let candidateError = false;
+  if (isCompany) {
+    try {
+      candidates = await getCompanyCandidates(viewer.id);
+    } catch (error) {
+      console.error("Couldn't load candidate board", error);
+      candidateError = true;
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
@@ -44,6 +57,15 @@ export default async function DashboardPage() {
         </div>
         {allowance ? <NewProjectButton allowance={allowance} /> : null}
       </div>
+
+      {isCompany ? (
+        candidateError ? (
+          <section className="mt-8 rounded-xl border border-line bg-surface p-6">
+            <h2 className="font-medium">Candidate board</h2>
+            <p role="alert" className="mt-1 text-sm text-danger">Couldn’t load your candidates. Please try refreshing the dashboard.</p>
+          </section>
+        ) : <CandidateBoard candidates={candidates} />
+      ) : null}
 
       {!isCompany ? (
         <section className="mt-8 rounded-xl border border-line bg-surface">
