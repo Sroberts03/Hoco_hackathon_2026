@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Viewer } from "@/features/auth/lib/types";
 import { ProjectCard } from "@/features/projects/components/project-card";
+import { NewProjectButton } from "@/features/projects/components/new-project/new-project-button";
+import type { PublicationAllowance } from "@/features/projects/lib/types";
 import { buttonClass } from "@/components/ui";
 import { FEED_PAGE_SIZE, type SortMode } from "../lib/config";
 import { countActiveFilters, filtersToSearchParams } from "../lib/filters";
@@ -10,7 +12,18 @@ import { FilterPanel } from "./filter-panel";
 import { ScoreDetails } from "./score-details";
 import { SortTabs } from "./sort-tabs";
 
-export function DiscoverView({ feed, viewer, explain }: { feed: FeedResult; viewer: Viewer | null; explain: boolean }) {
+export function DiscoverView({
+  feed,
+  viewer,
+  allowance,
+  explain,
+}: {
+  feed: FeedResult;
+  viewer: Viewer | null;
+  /** Present for creators, who get the "New project" button. */
+  allowance: PublicationAllowance | null;
+  explain: boolean;
+}) {
   const { filters, sort, usingDefaults, savedDefaults } = feed;
   const hasSavedDefaults = Boolean(savedDefaults);
   const activeCount = countActiveFilters(filters);
@@ -32,11 +45,14 @@ export function DiscoverView({ feed, viewer, explain }: { feed: FeedResult; view
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Discover projects</h1>
-        <p className="text-sm text-muted">
-          Real work, running right here. {viewer ? null : "Browse freely, and sign in to save projects or contact creators."}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Discover projects</h1>
+          <p className="text-sm text-muted">
+            Real work, running right here. {viewer ? null : "Browse freely, and sign in to save projects or contact creators."}
+          </p>
+        </div>
+        {allowance ? <NewProjectButton allowance={allowance} /> : null}
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">

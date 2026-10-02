@@ -315,6 +315,11 @@ async function main() {
       created_at: published ?? daysAgo(4),
     }).select("id").single());
     projectId[p.title] = row.id;
+    if (published) {
+      must(`project_publications ${p.title}`, await db.from("project_publications").insert({
+        creator_id: ids[p.owner], project_id: row.id, first_published_at: published, destination: "active_feed",
+      }));
+    }
 
     const missing = p.tags.filter((t) => !tagId[t]);
     if (missing.length) throw new Error(`Unknown tags on ${p.title}: ${missing.join(", ")}`);
