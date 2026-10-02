@@ -1,5 +1,5 @@
 -- Everbuild: first-publication ledger behind the rolling publication limit.
--- Run after 20261002170000_profile_locations.sql.
+-- Run after 20261002180000_company_candidates.sql.
 -- As before: RLS on, no policies. Only Next.js server code (secret key) reads/writes.
 --
 -- One row per project, written the first time it is published. Rows are never
