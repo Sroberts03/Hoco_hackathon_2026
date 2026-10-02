@@ -4,6 +4,7 @@ import { db } from "@/lib/supabase/admin";
 import { mediaUrl } from "@/features/media/lib/config";
 import { UUID_RE } from "@/features/projects/server/access";
 import type { Availability } from "../lib/constants";
+import { locationLabel } from "../lib/locations";
 import type { PublicProfile, ProfileLink, ProfileProject } from "../lib/types";
 
 type Row = {
@@ -12,6 +13,10 @@ type Row = {
   display_name: string;
   avatar_path: string | null;
   general_location: string | null;
+  location_city: string | null;
+  location_region: string | null;
+  location_country: string | null;
+  updated_at: string;
   creator_profiles: {
     bio: string | null;
     interests: string[];
@@ -53,7 +58,7 @@ export const getPublicProfile = cache(async (id: string): Promise<PublicProfile 
   const { data, error } = await db()
     .from("users")
     .select(
-      `id, role, display_name, avatar_path, general_location,
+      `id, role, display_name, avatar_path, general_location, location_city, location_region, location_country, updated_at,
        creator_profiles(bio, interests, education, availability, links),
        company_profiles(company_name, description, industry_tags, interests, website, links, is_verified)`,
     )
@@ -92,8 +97,11 @@ export const getPublicProfile = cache(async (id: string): Promise<PublicProfile 
     id: profile.id,
     role: profile.role,
     displayName: profile.display_name,
-    avatarPath: profile.avatar_path,
-    location: profile.general_location,
+    avatarUrl: profile.avatar_path?.startsWith(`avatars/${profile.id}/`) ? `/avatars/${profile.id}?v=${encodeURIComponent(profile.updated_at)}` : null,
+    location: locationLabel(profile.location_city, profile.location_region, profile.location_country, profile.general_location),
+    city: profile.location_city,
+    region: profile.location_region,
+    country: profile.location_country,
     bio: creator?.bio ?? company?.description ?? null,
     interests: creator?.interests ?? company?.interests ?? [],
     education: creator?.education ?? null,

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { Alert, Field, buttonClass, inputClass } from "@/components/ui";
 import { AVAILABILITY } from "../lib/constants";
+import { COUNTRIES, cityOptions, US_STATES } from "../lib/locations";
 import type { ProfileFormState, PublicProfile } from "../lib/types";
 import { updateProfile } from "../server/actions";
 
@@ -14,6 +15,22 @@ export function ProfileForm({ profile }: { profile: PublicProfile }) {
   const value = (key: string, fallback: string) => fields?.[key] ?? fallback;
   const creator = profile.role === "creator";
   const links = new Map(profile.links.map((link) => [link.label, link.href]));
+  const [country, setCountry] = useState(value("country", profile.country ?? ""));
+  const [region, setRegion] = useState(value("region", profile.region ?? ""));
+  const [city, setCity] = useState(value("city", profile.city ?? ""));
+  const [compressing, setCompressing] = useState(false);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCompressing(true);
+    const formData = new FormData(event.currentTarget);
+    const file = formData.get("avatar");
+    if (file instanceof File && file.size > 0) {
+      formData.set("avatar", await compressAvatar(file), "profile.jpg");
+    }
+    setCompressing(false);
+    startTransition(() => action(formData));
+  }
 
   return (
     <section className="rounded-xl border border-line bg-surface p-5 sm:p-6" aria-labelledby="edit-profile-heading">
@@ -21,7 +38,7 @@ export function ProfileForm({ profile }: { profile: PublicProfile }) {
         Edit your profile
       </h2>
       <p className="mt-1 text-sm text-muted">Keep this focused on what you build and the kinds of opportunities you want.</p>
-      <form action={action} className="mt-6 space-y-5" noValidate>
+      <form onSubmit={submit} className="mt-6 space-y-5" noValidate>
         {state.error ? <Alert tone="error">{state.error}</Alert> : null}
         {state.notice ? <Alert tone="notice">{state.notice}</Alert> : null}
 
@@ -36,28 +53,54 @@ export function ProfileForm({ profile }: { profile: PublicProfile }) {
               className={inputClass}
             />
           </Field>
-          <Field label="General location" htmlFor="profile-location" hint="City, region, or timezone — never an exact address.">
+          <Field label="Country" htmlFor="profile-country" hint="Only a general location is shown publicly.">
+            <select id="profile-country" name="country" value={country} onChange={(event) => { setCountry(event.target.value); setRegion(""); setCity(""); }} className={inputClass}>
+              <option value="">Choose a country</option>
+              {Object.entries(COUNTRIES).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+            </select>
+          </Field>
+        </div>
+        <input type="hidden" name="existingLocation" value={profile.location ?? ""} />
+        {profile.location ? <label className="-mt-3 flex items-center gap-2 text-xs text-muted"><input type="checkbox" name="clearLocation" /> Clear current location</label> : null}
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="City" htmlFor="profile-city">
             <input
-              id="profile-location"
-              name="location"
-              maxLength={120}
-              defaultValue={value("location", profile.location ?? "")}
+              id="profile-city"
+              name="city"
+              required={Boolean(country || region)}
+              maxLength={100}
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              list="profile-city-options"
               className={inputClass}
-              placeholder="Denver, CO"
+              placeholder="Denver"
             />
+            <datalist id="profile-city-options">
+              {cityOptions(country, region).map((city) => <option key={city} value={city} />)}
+            </datalist>
+          </Field>
+          <Field label={country === "US" ? "State" : "State or region"} htmlFor="profile-region">
+            {country === "US" ? (
+              <select id="profile-region" name="region" value={region} onChange={(event) => setRegion(event.target.value)} className={inputClass}>
+                <option value="">Choose a state</option>
+                {Object.entries(US_STATES).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+              </select>
+            ) : (
+              <input id="profile-region" name="region" required={Boolean(country)} maxLength={100} value={region} onChange={(event) => setRegion(event.target.value)} className={inputClass} placeholder="Region or province" />
+            )}
           </Field>
         </div>
 
-        <Field label="Profile image URL" htmlFor="profile-avatar" hint="Optional direct image URL.">
+        <Field label="Profile photo" htmlFor="profile-avatar" hint="JPG, PNG, or WebP. Photos are compressed and limited to 1 MB.">
           <input
             id="profile-avatar"
-            name="avatarPath"
-            type="url"
-            maxLength={500}
-            defaultValue={value("avatarPath", profile.avatarPath ?? "")}
+            type="file"
+            name="avatar"
+            accept="image/jpeg,image/png,image/webp"
             className={inputClass}
-            placeholder="https://…"
           />
+          {profile.avatarUrl ? <label className="mt-2 flex items-center gap-2 text-xs text-muted"><input type="checkbox" name="removeAvatar" /> Remove current photo</label> : null}
         </Field>
 
         <Field label={creator ? "Short bio" : "Company description"} htmlFor="profile-bio">
@@ -146,10 +189,29 @@ export function ProfileForm({ profile }: { profile: PublicProfile }) {
           </div>
         </div>
 
-        <button type="submit" disabled={pending} className={buttonClass("primary", "md")}>
-          {pending ? "Saving…" : "Save profile"}
+        <button type="submit" disabled={pending || compressing} className={buttonClass("primary", "md")}>
+          {compressing ? "Compressing…" : pending ? "Saving…" : "Save profile"}
         </button>
       </form>
     </section>
   );
+}
+
+async function compressAvatar(file: File): Promise<File> {
+  if (typeof createImageBitmap !== "function") return file;
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if (!bitmap) return file;
+
+  const maxDimension = 512;
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+  return blob ? new File([blob], "profile.jpg", { type: "image/jpeg" }) : file;
 }

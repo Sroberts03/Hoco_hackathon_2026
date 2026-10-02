@@ -10,8 +10,11 @@ export type PublicProfile = {
   id: string;
   role: Role;
   displayName: string;
-  avatarPath: string | null;
+  avatarUrl: string | null;
   location: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
   bio: string | null;
   interests: string[];
   education: string | null;

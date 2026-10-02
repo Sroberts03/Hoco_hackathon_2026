@@ -4,12 +4,15 @@ import { revalidatePath } from "next/cache";
 import { getViewer } from "@/features/auth/server/viewer";
 import { db } from "@/lib/supabase/admin";
 import { isAvailability } from "../lib/constants";
+import { locationLabel, validateLocation } from "../lib/locations";
 import type { ProfileFormState } from "../lib/types";
+import { MEDIA_BUCKET, storagePaths } from "@/features/media/lib/config";
 
 const MAX = {
   displayName: 100,
-  avatarPath: 500,
-  location: 120,
+  city: 100,
+  region: 100,
+  country: 100,
   bio: 1000,
   education: 200,
   website: 500,
@@ -38,8 +41,9 @@ function validUrl(value: string) {
 function formFields(formData: FormData) {
   return {
     displayName: field(formData, "displayName"),
-    avatarPath: field(formData, "avatarPath"),
-    location: field(formData, "location"),
+    city: field(formData, "city"),
+    region: field(formData, "region"),
+    country: field(formData, "country"),
     bio: field(formData, "bio"),
     interests: field(formData, "interests"),
     education: field(formData, "education"),
@@ -65,8 +69,9 @@ export async function updateProfile(_previous: ProfileFormState, formData: FormD
 
   const lengths: [string, string, number][] = [
     ["Name", values.displayName, MAX.displayName],
-    ["Avatar URL", values.avatarPath, MAX.avatarPath],
-    ["Location", values.location, MAX.location],
+    ["City", values.city, MAX.city],
+    ["State or region", values.region, MAX.region],
+    ["Country", values.country, MAX.country],
     ["Bio", values.bio, MAX.bio],
     ["Education", values.education, MAX.education],
     ["Website", values.website, MAX.website],
@@ -76,8 +81,23 @@ export async function updateProfile(_previous: ProfileFormState, formData: FormD
   ];
   const tooLong = lengths.find(([, value, limit]) => value.length > limit);
   if (tooLong) return { error: `${tooLong[0]} is too long.`, fields };
-  if (!validUrl(values.avatarPath) || !validUrl(values.website) || !validUrl(values.linkedin) || !validUrl(values.github) || !validUrl(values.otherLink)) {
-    return { error: "Use complete http:// or https:// URLs for links and your avatar.", fields };
+  const locationError = validateLocation(values.city, values.region, values.country);
+  if (locationError) return { error: locationError, fields };
+  if (!validUrl(values.website) || !validUrl(values.linkedin) || !validUrl(values.github) || !validUrl(values.otherLink)) {
+    return { error: "Use complete http:// or https:// URLs for your website and social links.", fields };
+  }
+  const existingLocation = field(formData, "existingLocation");
+  const clearLocation = formData.get("clearLocation") === "on";
+  const preserveLegacyLocation = !values.city && !values.region && !values.country && Boolean(existingLocation) && !clearLocation;
+
+  const avatar = formData.get("avatar");
+  const removeAvatar = formData.get("removeAvatar") === "on";
+  const avatarFile = avatar instanceof File && avatar.size > 0 ? avatar : null;
+  if (avatarFile && (!avatarFile.type.startsWith("image/") || !["image/jpeg", "image/png", "image/webp"].includes(avatarFile.type))) {
+    return { error: "Upload a JPG, PNG, or WebP image.", fields };
+  }
+  if (avatarFile && avatarFile.size > 1_000_000) {
+    return { error: "Profile images must be 1 MB or smaller. Use a smaller or compressed image.", fields };
   }
 
   const interests = listField(formData, "interests");
@@ -86,12 +106,30 @@ export async function updateProfile(_previous: ProfileFormState, formData: FormD
     return { error: "Each interest or industry tag must be 50 characters or fewer.", fields };
   }
 
+  const { data: currentUser } = await db().from("users").select("avatar_path").eq("id", viewer.id).maybeSingle();
+  const nextAvatarPath = avatarFile ? storagePaths.avatar(viewer.id) : removeAvatar ? null : undefined;
+  if (avatarFile) {
+    const { error: uploadError } = await db().storage.from(MEDIA_BUCKET).upload(nextAvatarPath!, avatarFile, {
+      cacheControl: "31536000",
+      contentType: avatarFile.type,
+      upsert: true,
+    });
+    if (uploadError) return { error: "Couldn't upload your profile image. Try again.", fields };
+  }
+
   const common = await db()
     .from("users")
     .update({
       display_name: values.displayName,
-      avatar_path: values.avatarPath || null,
-      general_location: values.location || null,
+      ...(nextAvatarPath !== undefined ? { avatar_path: nextAvatarPath } : {}),
+      ...(preserveLegacyLocation
+        ? {}
+        : {
+            location_city: values.city || null,
+            location_region: values.region || null,
+            location_country: values.country || null,
+            general_location: locationLabel(values.city, values.region, values.country, null),
+          }),
       updated_at: new Date().toISOString(),
     })
     .eq("id", viewer.id);
@@ -129,6 +167,10 @@ export async function updateProfile(_previous: ProfileFormState, formData: FormD
           .eq("user_id", viewer.id);
 
   if (profileUpdate.error) return { error: "Couldn't update your profile details. Try again.", fields };
+
+  if (removeAvatar && !avatarFile && currentUser?.avatar_path?.startsWith(`avatars/${viewer.id}/`)) {
+    await db().storage.from(MEDIA_BUCKET).remove([currentUser.avatar_path]);
+  }
 
   revalidatePath(`/users/${viewer.id}`);
   revalidatePath(`/companies/${viewer.id}`);

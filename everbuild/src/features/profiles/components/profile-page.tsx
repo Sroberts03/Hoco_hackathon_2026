@@ -123,9 +123,9 @@ export function ProfilePage({ profile, viewer }: { profile: PublicProfile; viewe
 
 function Avatar({ profile }: { profile: PublicProfile }) {
   const initials = profile.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  return profile.avatarPath ? (
+  return profile.avatarUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={profile.avatarPath} alt="" className="h-16 w-16 shrink-0 rounded-full border border-line object-cover sm:h-20 sm:w-20" />
+    <img src={profile.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-full border border-line object-cover sm:h-20 sm:w-20" />
   ) : (
     <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-semibold text-accent sm:h-20 sm:w-20" aria-hidden>
       {initials || "E"}
