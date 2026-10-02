@@ -15,8 +15,8 @@ export function MessageCreatorForm({
 }: {
   recipientId: string;
   recipientName: string;
-  projectId: string;
-  projectTitle: string;
+  projectId?: string;
+  projectTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<MessageFormState, FormData>(startConversation, {});
@@ -33,9 +33,13 @@ export function MessageCreatorForm({
   return (
     <form action={action} className="w-full space-y-2 rounded-lg border border-line bg-surface p-4">
       <input type="hidden" name="recipientId" value={recipientId} />
-      <input type="hidden" name="projectId" value={projectId} />
+      {projectId ? <input type="hidden" name="projectId" value={projectId} /> : null}
       <label htmlFor="message-body" className="block text-sm font-medium">
-        Message {recipientName} about <span className="text-accent">{projectTitle}</span>
+        {projectId && projectTitle ? (
+          <>Message {recipientName} about <span className="text-accent">{projectTitle}</span></>
+        ) : (
+          <>Message {recipientName}</>
+        )}
       </label>
       <textarea
         id="message-body"

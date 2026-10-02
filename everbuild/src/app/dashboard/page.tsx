@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireViewer } from "@/features/auth/server/viewer";
+import { buttonClass } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -17,6 +19,11 @@ export default async function DashboardPage() {
         ) : null}
       </h1>
       <p className="mt-1 text-sm text-muted">{viewer.email}</p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link href={`/users/${viewer.id}`} className={buttonClass("primary", "sm")}>
+          View profile
+        </Link>
+      </div>
 
       <section className="mt-8 rounded-xl border border-dashed border-line bg-surface p-6">
         <h2 className="font-medium">{isCompany ? "Your saved projects" : "Your projects"}</h2>

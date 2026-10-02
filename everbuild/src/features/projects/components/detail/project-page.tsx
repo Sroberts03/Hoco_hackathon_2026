@@ -54,7 +54,7 @@ export function ProjectPage({ project, comments, viewer, saved, canComment }: Pr
           </p>
           <h1 className="mt-1.5 text-3xl font-semibold tracking-tight sm:text-4xl">{p.title}</h1>
           <p className="mt-2 text-[15px] text-muted">
-            By <span className="font-medium text-ink">{p.owner.name}</span>
+            By <Link href={`/users/${p.owner.id}`} className="font-medium text-ink hover:underline">{p.owner.name}</Link>
             {p.collaborators.length ? <> with {p.collaborators.map((c) => c.name).join(", ")}</> : null}
             {activeSince ? <> · {formatDate(activeSince)}</> : null}
           </p>
@@ -113,7 +113,7 @@ export function ProjectPage({ project, comments, viewer, saved, canComment }: Pr
 
         <aside className="space-y-6">
           <SidebarCard title="Creator">
-            <p className="font-medium">{p.owner.name}</p>
+            <Link href={`/users/${p.owner.id}`} className="font-medium hover:underline">{p.owner.name}</Link>
             <p className="text-sm text-muted">{[p.owner.location, p.owner.education].filter(Boolean).join(" · ")}</p>
             {p.owner.availability ? (
               <p

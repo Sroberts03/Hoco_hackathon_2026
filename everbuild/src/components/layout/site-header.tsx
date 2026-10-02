@@ -33,9 +33,9 @@ export async function SiteHeader() {
 
         {viewer ? (
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted sm:inline" title={viewer.email}>
+            <Link href={`/users/${viewer.id}`} className="hidden text-sm text-muted hover:text-ink sm:inline" title={viewer.email}>
               {viewer.displayName}
-            </span>
+            </Link>
             <SignOutButton />
           </div>
         ) : (
