@@ -3,8 +3,8 @@ export const CANDIDATE_STAGES = {
   messaged: "Messaged",
   scheduling_interview: "Scheduling an Interview",
   interview_scheduled: "Interview Scheduled",
-  uninterested: "Uninterested",
   hired: "Hired",
+  uninterested: "Uninterested",
 } as const;
 
 export type CandidateStage = keyof typeof CANDIDATE_STAGES;
