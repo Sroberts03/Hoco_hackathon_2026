@@ -1,26 +1,60 @@
 @import "tailwindcss";
 
+/* Everbuild design tokens: professional and restrained, one accent. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f3f2ee;
+  --ink: #1a1a19;
+  --muted: #5f5e5a;
+  --line: #e4e2dc;
+  --accent: #24524e;
+  --accent-hover: #1b3f3c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6eeec;
+  --danger: #a63d32;
+  --danger-soft: #f8e9e6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --surface-2: #222220;
+    --ink: #ecebe7;
+    --muted: #a3a29c;
+    --line: #2f2e2b;
+    --accent: #86bcb2;
+    --accent-hover: #a2cec6;
+    --accent-ink: #0e1d1b;
+    --accent-soft: #1c2a28;
+    --danger: #e38b7f;
+    --danger-soft: #2e1c19;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent-soft);
 }

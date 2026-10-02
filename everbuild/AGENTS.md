@@ -10,4 +10,13 @@ make sure to check out project.md for what the app is and what the app should ac
 
 # DATA:
 data is gotten by supabase but business logic should stay withing the next.js application
+
 <!-- END:nextjs-agent-rules -->
+
+# STRUCTURE:
+code is organized by feature under `src/features/<feature>/`, split by kind:
+- `components/` React components for that feature (client components marked `"use client"`)
+- `server/` server-only code: Server Actions (`actions.ts`), data access, route/proxy logic
+- `lib/` pure helpers and types that are safe to import from client or server
+`src/app/` holds routes only; pages and route handlers stay thin and import from features.
+Shared, feature-agnostic code lives in `src/components/` (ui primitives, layout) and `src/lib/` (e.g. Supabase clients).
